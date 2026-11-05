@@ -66,23 +66,29 @@ export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
           pointerId.current = e.pointerId;
           e.currentTarget.setPointerCapture(e.pointerId);
           setDragging(true);
+          setSettling(false);
           setTapped(null);
-          setDragIndex(indexAt(e.clientX));
+          setPos(posAt(e.clientX));
         }}
         onPointerMove={(e) => {
           if (pointerId.current !== e.pointerId) return;
-          setDragIndex(indexAt(e.clientX));
+          setPos(posAt(e.clientX));
         }}
         onPointerUp={(e) => {
           if (pointerId.current !== e.pointerId) return;
-          const idx = indexAt(e.clientX);
+          const p = posAt(e.clientX);
+          const idx = p == null ? null : Math.round(p);
           endDrag();
+          // Let the bubble spring from wherever the finger left it.
+          setSettling(true);
           if (idx != null && idx !== active) {
             const tab = tabs[idx];
             if (tab) {
               setTapped(idx);
               navigate({ to: tab.to });
             }
+          } else {
+            setPos(active);
           }
         }}
         onPointerCancel={() => {
