@@ -76,8 +76,11 @@ export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
           const idx = indexAt(e.clientX);
           endDrag();
           if (idx != null && idx !== active) {
-            setTapped(idx);
-            navigate({ to: tabs[idx].to });
+            const tab = tabs[idx];
+            if (tab) {
+              setTapped(idx);
+              navigate({ to: tab.to });
+            }
           }
         }}
         onPointerCancel={() => {
