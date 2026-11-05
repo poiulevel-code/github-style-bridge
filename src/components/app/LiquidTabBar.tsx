@@ -105,10 +105,14 @@ export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
             className="glass-bubble absolute inset-y-0 left-0 rounded-[1.6rem]"
             style={{
               width: `${100 / n}%`,
-              transform: `translate3d(${shown * 100}%,0,0)`,
+              transform: `translate3d(${shown * 100}%,0,0) scale(${
+                dragging ? "1.06, 0.92" : "1, 1"
+              })`,
               transition: dragging
                 ? "none"
-                : "transform 280ms cubic-bezier(0.32, 1.25, 0.55, 1)",
+                : settling
+                  ? "transform 520ms cubic-bezier(0.22, 1.6, 0.36, 1)"
+                  : "transform 380ms cubic-bezier(0.22, 1.45, 0.36, 1)",
               willChange: "transform",
             }}
           />
