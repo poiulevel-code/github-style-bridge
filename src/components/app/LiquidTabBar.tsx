@@ -1,5 +1,5 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import type { LucideIcon } from "./icons";
 
 type Tab = { to: string; label: string; icon: LucideIcon };
@@ -16,18 +16,78 @@ function indexFor(tabs: readonly Tab[], pathname: string) {
  * Bottom tab bar. The indicator is positioned with pure CSS percentages
  * (no measuring), so it is visible in the very first server render and
  * moves instantly on tap, before the next page finishes loading.
+ *
+ * The whole bar is swipeable (Telegram style): press and slide across
+ * the bar with a finger or the mouse, the highlight follows the pointer,
+ * and releasing navigates to the tab under it. Tapping a tab still works.
  */
 export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const routeIndex = indexFor(tabs, pathname);
   const [tapped, setTapped] = useState<number | null>(null);
-  useEffect(() => setTapped(null), [routeIndex]);
+  const [dragging, setDragging] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  useEffect(() => {
+    setTapped(null);
+    setDragging(false);
+    setDragIndex(null);
+  }, [routeIndex]);
   const active = tapped ?? routeIndex;
+  const shown = dragIndex ?? active;
   const n = tabs.length;
+  const barRef = useRef<HTMLDivElement>(null);
+  const pointerId = useRef<number | null>(null);
+
+  const indexAt = (clientX: number): number | null => {
+    const el = barRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0) return null;
+    const t = Math.floor(((clientX - r.left) / r.width) * n);
+    return Math.min(n - 1, Math.max(0, t));
+  };
+
+  const endDrag = () => {
+    pointerId.current = null;
+    setDragging(false);
+    setDragIndex(null);
+  };
 
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-[6px] z-20 mx-auto max-w-md px-2 pb-0 pt-1 sm:px-3">
-      <div className="pointer-events-auto rounded-[2rem] border border-border bg-card p-1.5 shadow-md">
+      <div
+        ref={barRef}
+        className="pointer-events-auto touch-none select-none rounded-[2rem] border border-border bg-card p-1.5 shadow-md"
+        onPointerDown={(e) => {
+          if (pointerId.current !== null) return;
+          pointerId.current = e.pointerId;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          setDragging(true);
+          setTapped(null);
+          setDragIndex(indexAt(e.clientX));
+        }}
+        onPointerMove={(e) => {
+          if (pointerId.current !== e.pointerId) return;
+          setDragIndex(indexAt(e.clientX));
+        }}
+        onPointerUp={(e) => {
+          if (pointerId.current !== e.pointerId) return;
+          const idx = indexAt(e.clientX);
+          endDrag();
+          if (idx != null && idx !== active) {
+            const tab = tabs[idx];
+            if (tab) {
+              setTapped(idx);
+              navigate({ to: tab.to });
+            }
+          }
+        }}
+        onPointerCancel={() => {
+          if (pointerId.current === null) return;
+          endDrag();
+        }}
+      >
         <div
           className="relative grid select-none"
           style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}
@@ -37,27 +97,30 @@ export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
             className="glass-bubble absolute inset-y-0 left-0 rounded-[1.6rem]"
             style={{
               width: `${100 / n}%`,
-              transform: `translate3d(${active * 100}%,0,0)`,
-              transition: "transform 280ms cubic-bezier(0.32, 1.25, 0.55, 1)",
+              transform: `translate3d(${shown * 100}%,0,0)`,
+              transition: dragging
+                ? "none"
+                : "transform 280ms cubic-bezier(0.32, 1.25, 0.55, 1)",
               willChange: "transform",
             }}
           />
           {tabs.map(({ to, label, icon: Icon }, i) => {
-            const on = i === active;
+            const on = i === shown;
             return (
               <Link
                 key={to}
                 to={to}
                 draggable={false}
                 preload="render"
-                aria-current={on ? "page" : undefined}
-                onClick={() => i !== active && setTapped(i)}
+                aria-current={i === active ? "page" : undefined}
                 className={`relative z-10 flex flex-col items-center gap-0.5 rounded-[1.6rem] py-2 text-[11px] transition-[color,transform] duration-200 active:scale-95 ${
                   on ? "font-semibold text-primary" : "text-muted-foreground"
                 }`}
               >
                 <Icon
-                  className={`h-[22px] w-[22px] transition-transform duration-200 ${on ? "scale-110" : ""}`}
+                  className={`h-[22px] w-[22px] transition-transform duration-200 ${
+                    on ? "scale-110" : ""
+                  }`}
                   strokeWidth={on ? 2.4 : 1.8}
                 />
                 {label}
