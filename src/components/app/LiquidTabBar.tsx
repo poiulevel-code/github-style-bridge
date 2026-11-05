@@ -27,31 +27,33 @@ export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
   const routeIndex = indexFor(tabs, pathname);
   const [tapped, setTapped] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  // Continuous bubble position (float, in tab units) so it glides like water.
+  const [pos, setPos] = useState<number | null>(null);
+  const [settling, setSettling] = useState(false);
   useEffect(() => {
     setTapped(null);
     setDragging(false);
-    setDragIndex(null);
+    setPos(null);
+    setSettling(false);
   }, [routeIndex]);
   const active = tapped ?? routeIndex;
-  const shown = dragIndex ?? active;
+  const shown = pos ?? active;
   const n = tabs.length;
   const barRef = useRef<HTMLDivElement>(null);
   const pointerId = useRef<number | null>(null);
 
-  const indexAt = (clientX: number): number | null => {
+  const posAt = (clientX: number): number | null => {
     const el = barRef.current;
     if (!el) return null;
     const r = el.getBoundingClientRect();
     if (r.width <= 0) return null;
-    const t = Math.floor(((clientX - r.left) / r.width) * n);
+    const t = ((clientX - r.left) / r.width) * n - 0.5;
     return Math.min(n - 1, Math.max(0, t));
   };
 
   const endDrag = () => {
     pointerId.current = null;
     setDragging(false);
-    setDragIndex(null);
   };
 
   return (
