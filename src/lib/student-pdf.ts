@@ -142,14 +142,17 @@ function statTiles(f: Flow, rows: AttendanceRow[]) {
   const st = computeStats(rows);
   const tiles: [string, number, RGB, RGB][] = [
     ["Cemaatle Kılınan Namaz", st.namazKilinan, C.green, C.greenSoft],
-    ["Derse Girdiği", st.ders, C.blue, C.blueSoft],
-    ["Geç Kaldığı", st.gec, C.amber, C.amberSoft],
     ["Katılmadığı Namaz", st.namazKacirilan, C.red, C.redSoft],
-    ["İzinli Gün", st.izinli, C.violet, C.violetSoft],
-    ["Toplam Gün", daysSinceFirst(rows), C.gray, C.graySoft],
+    ["Toplam Gün", st.toplam, C.gray, C.graySoft],
+    ["Derse Katıldığı Gün", st.ders, C.blue, C.blueSoft],
+    ["Derse Katılmadığı Gün", st.dersKatilmadi, C.red, C.redSoft],
+    ["Geç Kaldığı Vakit", st.gecVakit, C.amber, C.amberSoft],
+    ["İzinli Vakit", st.izinliVakit, C.violet, C.violetSoft],
+    ["Hasta Vakit", st.hastaVakit, C.violet, C.violetSoft],
   ];
   const w = (CW - 8) / 3, h = 22;
-  f.ensure(2 * h + 6);
+  const rowsN = Math.ceil(tiles.length / 3);
+  f.ensure(rowsN * h + 6);
   tiles.forEach(([l, v, c, soft], i) => {
     const x = M + (i % 3) * (w + 4);
     const y = f.y + Math.floor(i / 3) * (h + 4);
@@ -162,7 +165,7 @@ function statTiles(f: Flow, rows: AttendanceRow[]) {
     font(d, 8.5, false, C.gray);
     d.text(l, x + w / 2, y + 17.5, { align: "center" });
   });
-  f.y += 2 * h + 4 + 10;
+  f.y += rowsN * h + (rowsN - 1) * 4 + 10;
 
   section(f, "Namaz Vakitleri", C.green);
   const vw = (CW - 4 * 3) / 5, vh = 24;
@@ -176,7 +179,7 @@ function statTiles(f: Flow, rows: AttendanceRow[]) {
     font(d, 8.5, true, C.green);
     d.text(v, x + vw / 2, f.y + 6, { align: "center" });
     font(d, 15, true);
-    d.text(String(n), x + vw / 2, f.y + 14, { align: "center" });
+    if (n) d.text(String(n), x + vw / 2, f.y + 14, { align: "center" });
     fill(d, C.white);
     d.roundedRect(x + 4, f.y + 18, vw - 8, 2.4, 1.2, 1.2, "F");
     if (pct > 0) {

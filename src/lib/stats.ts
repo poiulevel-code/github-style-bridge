@@ -74,8 +74,14 @@ export function computeStats(rows: AttendanceRow[]) {
     namazGun: rows.filter((r) => prayedCount(r) > 0).length,
     /** Prayers (vakit cells) attended with the congregation, on time or late. */
     namazKilinan: rows.reduce((a, r) => a + prayedCount(r), 0),
-    /** Prayers (vakit cells) missed without excuse. */
-    namazKacirilan: rows.reduce((a, r) => a + VAKITLER.filter((v) => cellStatus(r, v) === "yok").length, 0),
+    /** Prayers (vakit cells) not attended with the congregation: gelmedi, izinli or hasta. */
+    namazKacirilan: rows.reduce((a, r) => a + VAKITLER.filter((v) => !came(cellStatus(r, v))).length, 0),
+    /** Lesson days attended (on time or late) vs not attended (any other status). */
+    dersKatilmadi: rows.filter((r) => !came(cellStatus(r, "Ders"))).length,
+    /** Vakit cells (prayers only) by note. */
+    gecVakit: rows.reduce((a, r) => a + VAKITLER.filter((v) => cellStatus(r, v) === "gec").length, 0),
+    izinliVakit: rows.reduce((a, r) => a + VAKITLER.filter((v) => cellStatus(r, v) === "izinli").length, 0),
+    hastaVakit: rows.reduce((a, r) => a + VAKITLER.filter((v) => cellStatus(r, v) === "hasta").length, 0),
     vakit,
   };
 }
