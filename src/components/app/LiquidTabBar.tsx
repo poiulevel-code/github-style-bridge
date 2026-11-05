@@ -27,31 +27,33 @@ export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
   const routeIndex = indexFor(tabs, pathname);
   const [tapped, setTapped] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  // Continuous bubble position (float, in tab units) so it glides like water.
+  const [pos, setPos] = useState<number | null>(null);
+  const [settling, setSettling] = useState(false);
   useEffect(() => {
     setTapped(null);
     setDragging(false);
-    setDragIndex(null);
+    setPos(null);
+    setSettling(false);
   }, [routeIndex]);
   const active = tapped ?? routeIndex;
-  const shown = dragIndex ?? active;
+  const shown = pos ?? active;
   const n = tabs.length;
   const barRef = useRef<HTMLDivElement>(null);
   const pointerId = useRef<number | null>(null);
 
-  const indexAt = (clientX: number): number | null => {
+  const posAt = (clientX: number): number | null => {
     const el = barRef.current;
     if (!el) return null;
     const r = el.getBoundingClientRect();
     if (r.width <= 0) return null;
-    const t = Math.floor(((clientX - r.left) / r.width) * n);
+    const t = ((clientX - r.left) / r.width) * n - 0.5;
     return Math.min(n - 1, Math.max(0, t));
   };
 
   const endDrag = () => {
     pointerId.current = null;
     setDragging(false);
-    setDragIndex(null);
   };
 
   return (
@@ -64,23 +66,29 @@ export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
           pointerId.current = e.pointerId;
           e.currentTarget.setPointerCapture(e.pointerId);
           setDragging(true);
+          setSettling(false);
           setTapped(null);
-          setDragIndex(indexAt(e.clientX));
+          setPos(posAt(e.clientX));
         }}
         onPointerMove={(e) => {
           if (pointerId.current !== e.pointerId) return;
-          setDragIndex(indexAt(e.clientX));
+          setPos(posAt(e.clientX));
         }}
         onPointerUp={(e) => {
           if (pointerId.current !== e.pointerId) return;
-          const idx = indexAt(e.clientX);
+          const p = posAt(e.clientX);
+          const idx = p == null ? null : Math.round(p);
           endDrag();
+          // Let the bubble spring from wherever the finger left it.
+          setSettling(true);
           if (idx != null && idx !== active) {
             const tab = tabs[idx];
             if (tab) {
               setTapped(idx);
               navigate({ to: tab.to });
             }
+          } else {
+            setPos(active);
           }
         }}
         onPointerCancel={() => {
@@ -97,15 +105,19 @@ export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
             className="glass-bubble absolute inset-y-0 left-0 rounded-[1.6rem]"
             style={{
               width: `${100 / n}%`,
-              transform: `translate3d(${shown * 100}%,0,0)`,
+              transform: `translate3d(${shown * 100}%,0,0) scale(${
+                dragging ? "1.06, 0.92" : "1, 1"
+              })`,
               transition: dragging
                 ? "none"
-                : "transform 280ms cubic-bezier(0.32, 1.25, 0.55, 1)",
+                : settling
+                  ? "transform 520ms cubic-bezier(0.22, 1.6, 0.36, 1)"
+                  : "transform 380ms cubic-bezier(0.22, 1.45, 0.36, 1)",
               willChange: "transform",
             }}
           />
           {tabs.map(({ to, label, icon: Icon }, i) => {
-            const on = i === shown;
+            const on = i === Math.round(shown);
             return (
               <Link
                 key={to}
