@@ -117,7 +117,7 @@ export function LiquidTabBar({ tabs }: { tabs: readonly Tab[] }) {
             }}
           />
           {tabs.map(({ to, label, icon: Icon }, i) => {
-            const on = i === shown;
+            const on = i === Math.round(shown);
             return (
               <Link
                 key={to}
