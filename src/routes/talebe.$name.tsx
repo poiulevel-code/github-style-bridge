@@ -141,12 +141,16 @@ function TalebeDetay() {
 
       {tab === "Yoklama" && (
         <>
-          <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center sm:grid-cols-4">
             {[
-              { l: "Toplam", v: st.toplam, c: "text-foreground" },
-              { l: "Ders", v: st.ders, c: "text-primary" },
-              { l: "Geç", v: st.gec, c: "text-warn" },
-              { l: "İzinli", v: st.izinli, c: "text-info" },
+              { l: "Toplam Gün", v: st.toplam, c: "text-foreground" },
+              { l: "Kılınan Namaz", v: st.namazKilinan, c: "text-good" },
+              { l: "Katılmadığı Namaz", v: st.namazKacirilan, c: "text-destructive" },
+              { l: "Derse Katıldı (gün)", v: st.ders, c: "text-primary" },
+              { l: "Derse Katılmadı (gün)", v: st.dersKatilmadi, c: "text-destructive" },
+              { l: "Geç Kaldı (vakit)", v: st.gecVakit, c: "text-warn" },
+              { l: "İzinli (vakit)", v: st.izinliVakit, c: "text-info" },
+              { l: "Hasta (vakit)", v: st.hastaVakit, c: "text-info" },
             ].map((s) => (
               <div key={s.l} className="rounded-2xl bg-surface py-3">
                 <p className={`font-serif text-2xl font-bold ${s.c}`}>{s.v}</p>
@@ -160,7 +164,7 @@ function TalebeDetay() {
               return (
                 <div key={v} className="flex flex-1 flex-col items-center">
                   <Icon className="h-4 w-4 text-good" />
-                  <p className="mt-1 font-serif text-lg font-bold">{st.vakit[v] ?? 0}</p>
+                  <p className="mt-1 font-serif text-lg font-bold">{st.vakit[v] ? st.vakit[v] : "\u00a0"}</p>
                   <p className="text-[11px] text-muted-foreground">{v}</p>
                 </div>
               );
@@ -229,11 +233,13 @@ function TalebeDetay() {
             <div className="mt-5 grid grid-cols-3 gap-y-6 border-t border-border pt-5 text-center">
               {[
                 { icon: CheckCircle2, v: st.namazKilinan, l: "Cemaatle Kılınan Namaz", c: "text-good" },
-                { icon: CheckCircle2, v: st.ders, l: "Derse Girdiği", c: "text-good" },
-                { icon: Clock, v: st.gec, l: "Geç Kaldığı", c: "text-warn" },
                 { icon: CalendarX, v: st.namazKacirilan, l: "Katılmadığı Namaz", c: "text-destructive" },
-                { icon: CalendarOff, v: st.izinli, l: "İzinli Gün", c: "text-info" },
-                { icon: CalendarDays, v: daysSinceFirst(rows), l: "Toplam Gün", c: "text-muted-foreground" },
+                { icon: CalendarDays, v: st.toplam, l: "Toplam Gün", c: "text-muted-foreground" },
+                { icon: CheckCircle2, v: st.ders, l: "Derse Katıldığı Gün", c: "text-good" },
+                { icon: CalendarX, v: st.dersKatilmadi, l: "Derse Katılmadığı Gün", c: "text-destructive" },
+                { icon: Clock, v: st.gecVakit, l: "Geç Kaldığı Vakit", c: "text-warn" },
+                { icon: CalendarOff, v: st.izinliVakit, l: "İzinli Vakit", c: "text-info" },
+                { icon: CalendarOff, v: st.hastaVakit, l: "Hasta Vakit", c: "text-info" },
               ].map((s) => (
                 <div key={s.l}>
                   <s.icon className={`mx-auto h-7 w-7 ${s.c}`} />
